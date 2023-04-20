@@ -39,17 +39,20 @@ impl KeyValueStore {
     }
     fn set(&mut self, key: String, value: String) -> Option<String> {
         self.log
-            .write_all(format!("INSERT {} {}\n", key, value).as_bytes());
+            .write_all(format!("INSERT {} {}\n", key, value).as_bytes())
+            .expect("Set KeyValue interrupted");
         self.flush();
         return self.store.insert(key, value);
     }
     fn delete(&mut self, key: &str) -> Option<String> {
-        self.log.write_all(format!("DELETE {}\n", key).as_bytes());
+        self.log
+            .write_all(format!("DELETE {}\n", key).as_bytes())
+            .expect("Delete KeyValue interrupted");
         self.flush();
         return self.store.remove(key);
     }
-    fn flush(&mut self) -> std::io::Result<()> {
-        return self.log.flush();
+    fn flush(&mut self) -> () {
+        return self.log.flush().expect("Couldn't flush buffer");
     }
     fn list(&self) -> Vec<(&String, &String)> {
         return self.store.iter().collect();
