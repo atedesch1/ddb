@@ -51,6 +51,9 @@ impl KeyValueStore {
     fn flush(&mut self) -> std::io::Result<()> {
         return self.log.flush();
     }
+    fn list(&self) -> Vec<(&String, &String)> {
+        return self.store.iter().collect();
+    }
 }
 
 fn main() {
@@ -89,6 +92,13 @@ fn main() {
                     Some(val) => println!("Value is: {}", val),
                     None => println!("Key not present"),
                 };
+            }
+            "LIST" => {
+                let result = store.list();
+                println!("Listing KeyValue pairs:");
+                for (k, v) in result {
+                    println!("{}:{}", k, v);
+                }
             }
             _ => println!("invalid entry"),
         };
