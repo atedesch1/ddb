@@ -16,8 +16,7 @@ impl KeyValueStore {
     fn new(log_path: &str) -> Self {
         let mut store = HashMap::new();
         let mut log = WriteAheadLog::new(log_path);
-        let log_contents = log.read();
-        log_contents.iter().for_each(|wal_operation| {
+        log.read().iter().for_each(|wal_operation| {
             match wal_operation.operation.as_str() {
                 "INSERT" => store.insert(
                     wal_operation.arguments[0].clone(),
@@ -32,11 +31,11 @@ impl KeyValueStore {
     fn get(&self, key: &str) -> Option<&String> {
         return self.store.get(key);
     }
-    fn set(&mut self, key: String, value: String) -> Option<String> {
+    fn set(&mut self, key: &str, value: &str) -> Option<String> {
         self.log
             .append(format!("INSERT {} {}\n", key, value).as_str())
             .expect("operation couldn't be appended to wal");
-        return self.store.insert(key, value);
+        return self.store.insert(key.to_owned(), value.to_owned());
     }
     fn delete(&mut self, key: &str) -> Option<String> {
         self.log
@@ -66,7 +65,7 @@ fn main() {
             "INSERT" => {
                 let key = words[1].to_string();
                 let value = words[2].to_string();
-                let result = store.set(key.clone(), value.clone());
+                let result = store.set(&key, &value);
                 match result {
                     Some(prev) => println!("Previous value was: {}, inserting: {}", prev, value),
                     None => println!("Inserting new pair ({}, {})", key, value),
