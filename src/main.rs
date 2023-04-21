@@ -1,37 +1,32 @@
+mod wal;
+
 use std::{
     collections::HashMap,
-    fs::{File, OpenOptions},
-    io::{self, BufRead, BufReader, BufWriter, Write},
-    path::Path,
+    io::{self, Write},
 };
+
+use wal::WriteAheadLog;
 
 struct KeyValueStore {
     store: HashMap<String, String>,
-    log: BufWriter<File>,
+    log: WriteAheadLog,
 }
 
 impl KeyValueStore {
-    fn new(log_path: &Path) -> Self {
+    fn new(log_path: &str) -> Self {
         let mut store = HashMap::new();
-        match File::open(log_path) {
-            Ok(file) => {
-                let reader = BufReader::new(file);
-                for line in reader.lines() {
-                    let line = line.unwrap();
-                    let words = line.trim().split(' ').collect::<Vec<&str>>();
-
-                    match words[0] {
-                        "INSERT" => store.insert(words[1].to_string(), words[2].to_string()),
-                        "DELETE" => store.remove(words[1]),
-                        _ => panic!("Invalid log entry: {}", line),
-                    };
-                }
-            }
-            Err(_) => {
-                File::create(log_path).unwrap();
-            }
-        };
-        let log = BufWriter::new(OpenOptions::new().append(true).open(log_path).unwrap());
+        let mut log = WriteAheadLog::new(log_path);
+        let log_contents = log.read();
+        log_contents.iter().for_each(|wal_operation| {
+            match wal_operation.operation.as_str() {
+                "INSERT" => store.insert(
+                    wal_operation.arguments[0].clone(),
+                    wal_operation.arguments[1].clone(),
+                ),
+                "DELETE" => store.remove(&wal_operation.arguments[0]),
+                _ => panic!("Unhandled"),
+            };
+        });
         return KeyValueStore { store, log };
     }
     fn get(&self, key: &str) -> Option<&String> {
@@ -39,20 +34,15 @@ impl KeyValueStore {
     }
     fn set(&mut self, key: String, value: String) -> Option<String> {
         self.log
-            .write_all(format!("INSERT {} {}\n", key, value).as_bytes())
-            .expect("Set KeyValue interrupted");
-        self.flush();
+            .append(format!("INSERT {} {}\n", key, value).as_str())
+            .expect("operation couldn't be appended to wal");
         return self.store.insert(key, value);
     }
     fn delete(&mut self, key: &str) -> Option<String> {
         self.log
-            .write_all(format!("DELETE {}\n", key).as_bytes())
-            .expect("Delete KeyValue interrupted");
-        self.flush();
+            .append(format!("DELETE {}\n", key).as_str())
+            .expect("operation couldn't be appended to wal");
         return self.store.remove(key);
-    }
-    fn flush(&mut self) -> () {
-        return self.log.flush().expect("Couldn't flush buffer");
     }
     fn list(&self) -> Vec<(&String, &String)> {
         return self.store.iter().collect();
@@ -60,7 +50,7 @@ impl KeyValueStore {
 }
 
 fn main() {
-    let mut store = KeyValueStore::new(Path::new("./log.txt"));
+    let mut store = KeyValueStore::new("./log.txt");
 
     loop {
         print!("> ");
