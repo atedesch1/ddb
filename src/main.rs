@@ -16,14 +16,13 @@ impl KeyValueStore {
     fn new(log_path: &str) -> Self {
         let mut store = HashMap::new();
         let mut log = WriteAheadLog::new(log_path);
-        log.read().iter().for_each(|wal_operation| {
-            match wal_operation.operation.as_str() {
-                "INSERT" => store.insert(
-                    wal_operation.arguments[0].clone(),
-                    wal_operation.arguments[1].clone(),
+        log.read().unwrap().iter().for_each(|wal_operation| {
+            match wal_operation.operation {
+                wal::WalOperation::Insert => store.insert(
+                    wal_operation.key.clone(),
+                    wal_operation.value.clone().unwrap(),
                 ),
-                "DELETE" => store.remove(&wal_operation.arguments[0]),
-                _ => panic!("Unhandled"),
+                wal::WalOperation::Delete => store.remove(&wal_operation.key),
             };
         });
         return KeyValueStore { store, log };

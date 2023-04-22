@@ -1,11 +1,56 @@
+use std::str::FromStr;
 use std::{
     fs::{File, OpenOptions},
     io::{Error, Read, Write},
 };
 
-pub struct WalOperation {
-    pub operation: String,
-    pub arguments: Vec<String>,
+pub enum WalOperation {
+    Insert,
+    Delete,
+}
+
+impl FromStr for WalOperation {
+    type Err = std::io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim().to_lowercase().as_str() {
+            "insert" => Ok(WalOperation::Insert),
+            "delete" => Ok(WalOperation::Delete),
+            _ => Err(Error::new(std::io::ErrorKind::Other, "invalid operation")),
+        }
+    }
+}
+
+pub struct WalOperationLog {
+    pub operation: WalOperation,
+    pub key: String,
+    pub value: Option<String>,
+}
+
+impl FromStr for WalOperationLog {
+    type Err = std::io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        let words = s.trim().split(' ').collect::<Vec<&str>>();
+        let operation = match words.get(0) {
+            Some(operation) => WalOperation::from_str(operation)?,
+            None => return Err(Error::new(std::io::ErrorKind::Other, "missing operation")),
+        };
+        let key = match words.get(1) {
+            Some(key) => key.to_string(),
+            None => return Err(Error::new(std::io::ErrorKind::Other, "missing key")),
+        };
+        let value = match words.get(2) {
+            Some(value) => Some(value.to_string()),
+            None => None,
+        };
+
+        return Ok(WalOperationLog {
+            operation,
+            key,
+            value,
+        });
+    }
 }
 
 pub struct WriteAheadLog {
@@ -25,17 +70,13 @@ impl WriteAheadLog {
         return WriteAheadLog { log };
     }
 
-    pub fn read(&mut self) -> Vec<WalOperation> {
+    pub fn read(&mut self) -> Result<Vec<WalOperationLog>, std::io::Error> {
         let mut contents = String::new();
-        self.log.read_to_string(&mut contents).unwrap();
+        self.log.read_to_string(&mut contents)?;
         return contents
             .lines()
-            .map(|line| {
-                let words = line.trim().split(' ').collect::<Vec<&str>>();
-                return WalOperation {
-                    operation: words[0].to_owned(),
-                    arguments: words[1..].iter().map(|&s| s.to_owned()).collect(),
-                };
+            .map(|line| -> Result<WalOperationLog, std::io::Error> {
+                WalOperationLog::from_str(line)
             })
             .collect();
     }
