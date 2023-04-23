@@ -16,13 +16,13 @@ impl KeyValueStore {
     fn new(log_path: &str) -> Self {
         let mut store = HashMap::new();
         let mut log = WriteAheadLog::new(log_path);
-        log.read().unwrap().iter().for_each(|wal_operation| {
-            match wal_operation.operation {
+        log.read().unwrap().iter().for_each(|wal_log| {
+            match wal_log.operation {
                 wal::WalOperation::Insert => store.insert(
-                    wal_operation.key.clone(),
-                    wal_operation.value.clone().unwrap(),
+                    wal_log.key.clone(),
+                    wal_log.value.clone().unwrap(),
                 ),
-                wal::WalOperation::Delete => store.remove(&wal_operation.key),
+                wal::WalOperation::Delete => store.remove(&wal_log.key),
             };
         });
         return KeyValueStore { store, log };
@@ -31,15 +31,11 @@ impl KeyValueStore {
         return self.store.get(key);
     }
     fn set(&mut self, key: &str, value: &str) -> Option<String> {
-        self.log
-            .append(format!("INSERT {} {}\n", key, value).as_str())
-            .expect("operation couldn't be appended to wal");
+        self.log.log_insert_operation(key, value);
         return self.store.insert(key.to_owned(), value.to_owned());
     }
     fn delete(&mut self, key: &str) -> Option<String> {
-        self.log
-            .append(format!("DELETE {}\n", key).as_str())
-            .expect("operation couldn't be appended to wal");
+        self.log.log_delete_operation(key);
         return self.store.remove(key);
     }
     fn list(&self) -> Vec<(&String, &String)> {
