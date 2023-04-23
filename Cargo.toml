@@ -1,5 +1,6 @@
 [package]
-name = "db"
+name = "ddb"
+description = "distributed in-memory key-value store"
 version = "0.1.0"
 edition = "2021"
 
