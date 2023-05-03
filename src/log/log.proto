@@ -1,0 +1,16 @@
+syntax = "proto3";
+package log;
+import "google/protobuf/empty.proto";
+
+service Log {
+    rpc Log (LogEntry) returns (google.protobuf.Empty);
+    rpc RetrieveLogs (google.protobuf.Empty) returns (LogEntries);
+}
+
+message LogEntry {
+    bytes entry = 1;
+}
+
+message LogEntries {
+    repeated bytes entries = 1;
+}
