@@ -3,9 +3,11 @@ use crate::error::Result;
 
 use tonic::{Request, Response, Status};
 
-use super::rpc::log_server::{Log};
+use super::rpc::log_server::Log;
 use super::rpc::{LogEntries, LogEntry};
 use std::sync::Mutex;
+
+pub use super::rpc::log_server::LogServer;
 
 #[derive(Debug)]
 pub struct LogService {

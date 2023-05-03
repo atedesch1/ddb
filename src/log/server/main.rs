@@ -1,4 +1,4 @@
-use ddb::log::{service::LogService, rpc::log_server::LogServer};
+use ddb::log::service::{LogServer, LogService};
 use tonic::transport::Server;
 
 #[tokio::main]
