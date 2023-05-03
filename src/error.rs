@@ -31,3 +31,8 @@ impl From<std::io::Error> for Error {
     }
 }
 
+impl From<Error> for tonic::Status {
+    fn from(err: Error) -> Self {
+        tonic::Status::internal(err.to_string())
+    }
+}
