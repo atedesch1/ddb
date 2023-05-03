@@ -1,4 +1,4 @@
-use lib::error::{Error, Result};
+use crate::error::{Error, Result};
 
 use std::{
     collections::VecDeque,
@@ -7,15 +7,16 @@ use std::{
     path::Path,
 };
 
-pub struct Log {
+#[derive(Debug)]
+pub struct Logger {
     /// A file that stores the on-disk logs
     file: File,
     /// A queue with the uncommitted log entries
     uncommited: VecDeque<Vec<u8>>,
 }
 
-impl Log {
-    pub fn new(dir: &Path) -> Result<Log> {
+impl Logger {
+    pub fn new(dir: &Path) -> Result<Self> {
         create_dir_all(dir)?;
 
         let file = OpenOptions::new()
@@ -25,7 +26,7 @@ impl Log {
             .open(dir.join("log"))
             .unwrap();
 
-        return Ok(Log {
+        return Ok(Self {
             file,
             uncommited: VecDeque::new(),
         });
@@ -73,14 +74,14 @@ impl Log {
 #[test]
 fn test_commit_read() -> Result<()> {
     let dir = tempdir::TempDir::new("test-log")?;
-    let mut log = Log::new(dir.as_ref())?;
-    log.append(vec![0x00]);
-    log.append(vec![0x01]);
-    log.append(vec![0x02]);
-    log.append(vec![0x03]);
-    log.commit(3)?;
+    let mut l = Logger::new(dir.as_ref())?;
+    l.append(vec![0x00]);
+    l.append(vec![0x01]);
+    l.append(vec![0x02]);
+    l.append(vec![0x03]);
+    l.commit(3)?;
 
-    assert_eq!(log.uncommited.len(), 1);
-    assert_eq!(vec![vec![0], vec![1], vec![2]], log.read()?);
+    assert_eq!(l.uncommited.len(), 1);
+    assert_eq!(vec![vec![0], vec![1], vec![2]], l.read()?);
     Ok(())
 }

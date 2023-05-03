@@ -30,3 +30,4 @@ impl From<std::io::Error> for Error {
         Error::Internal(err.to_string())
     }
 }
+
