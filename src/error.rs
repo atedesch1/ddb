@@ -31,6 +31,18 @@ impl From<std::io::Error> for Error {
     }
 }
 
+impl<T> From<std::sync::TryLockError<T>> for Error {
+    fn from(err: std::sync::TryLockError<T>) -> Self {
+        Error::Internal(err.to_string())
+    }
+}
+
+impl<T> From<std::sync::PoisonError<T>> for Error {
+    fn from(err: std::sync::PoisonError<T>) -> Self {
+        Error::Internal(err.to_string())
+    }
+}
+
 impl From<Error> for tonic::Status {
     fn from(err: Error) -> Self {
         tonic::Status::internal(err.to_string())

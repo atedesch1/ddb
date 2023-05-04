@@ -5,6 +5,7 @@ import "google/protobuf/empty.proto";
 service Log {
     rpc Log (LogEntry) returns (google.protobuf.Empty);
     rpc RetrieveLogs (google.protobuf.Empty) returns (LogEntries);
+    rpc StreamLogs (google.protobuf.Empty) returns (stream LogEntries);
 }
 
 message LogEntry {
