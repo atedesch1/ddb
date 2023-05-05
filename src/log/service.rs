@@ -39,9 +39,7 @@ impl LogService {
         let log_committer = logger.clone();
         tokio::spawn(commit_task(log_committer));
 
-        return Ok(LogService {
-            logger: logger.clone(),
-        });
+        return Ok(LogService { logger });
     }
 }
 
