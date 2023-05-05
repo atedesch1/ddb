@@ -17,29 +17,29 @@ pub struct LogService {
     logger: Arc<Logger>,
 }
 
-async fn commit_task(logger: Arc<Logger>) -> () {
-    loop {
-        let uncommitted = logger.uncommitted().unwrap();
-        if uncommitted > 0 {
-            let to_commit = match uncommitted {
-                1..=5 => uncommitted,
-                _ => 5,
-            };
-
-            logger.commit(to_commit).unwrap();
-        }
-    }
-}
-
 impl LogService {
     pub fn new() -> Result<Self> {
         let dir = std::path::Path::new("store/logs");
         let logger = Arc::new(Logger::new(&dir)?);
 
         let log_committer = logger.clone();
-        tokio::spawn(commit_task(log_committer));
+        tokio::spawn(Self::commit_task(log_committer));
 
         return Ok(LogService { logger });
+    }
+
+    async fn commit_task(logger: Arc<Logger>) -> () {
+        loop {
+            let uncommitted = logger.uncommitted().unwrap();
+            if uncommitted > 0 {
+                let to_commit = match uncommitted {
+                    1..=5 => uncommitted,
+                    _ => 5,
+                };
+
+                logger.commit(to_commit).unwrap();
+            }
+        }
     }
 }
 
