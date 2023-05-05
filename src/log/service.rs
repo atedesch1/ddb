@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::logger::Logger;
 use crate::error::Result;
 
@@ -11,14 +13,34 @@ pub use super::rpc::log_server::LogServer;
 
 #[derive(Debug)]
 pub struct LogService {
-    logger: Logger,
+    logger: Arc<Logger>,
+}
+
+async fn commit_task(logger: Arc<Logger>) -> () {
+    loop {
+        let uncommitted = logger.uncommitted().unwrap();
+        if uncommitted > 0 {
+            let to_commit = match uncommitted {
+                1..=5 => uncommitted,
+                _ => 5,
+            };
+
+            logger.commit(to_commit).unwrap();
+        }
+    }
 }
 
 impl LogService {
     pub fn new() -> Result<Self> {
         let dir = std::path::Path::new("store/logs");
-        let logger = Logger::new(&dir)?;
-        return Ok(LogService { logger });
+        let logger = Arc::new(Logger::new(&dir)?);
+
+        let log_committer = logger.clone();
+        tokio::spawn(commit_task(log_committer));
+
+        return Ok(LogService {
+            logger: logger.clone(),
+        });
     }
 }
 
@@ -30,7 +52,6 @@ impl Log for LogService {
         let req = request.into_inner();
 
         self.logger.append(req.entry)?;
-        self.logger.commit(1)?;
 
         return Ok(Response::new(()));
     }

@@ -58,7 +58,15 @@ impl Logger {
 
     pub fn append(&self, entry: Vec<u8>) -> Result<()> {
         self.uncommitted.lock()?.push_back(entry);
-        Ok(())
+        return Ok(());
+    }
+
+    pub fn committed(&self) -> Result<usize> {
+        return Ok(self.index.read()?.len());
+    }
+
+    pub fn uncommitted(&self) -> Result<usize> {
+        return Ok(self.uncommitted.lock()?.len());
     }
 
     pub fn commit(&self, num_of_entries: usize) -> Result<()> {
@@ -148,6 +156,7 @@ fn test_commit_read() -> Result<()> {
     l.append(vec![0x03])?;
     l.commit(3)?;
 
+    assert_eq!(l.committed()?, 3);
     assert_eq!(l.uncommitted.lock()?.len(), 1);
     assert_eq!(l.read()?, vec![vec![0], vec![1], vec![2]]);
     Ok(())
