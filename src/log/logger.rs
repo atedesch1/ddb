@@ -127,7 +127,7 @@ impl Logger {
         return Ok(entries);
     }
 
-    pub fn read(&self) -> Result<Vec<Vec<u8>>> {
+    pub fn read_all(&self) -> Result<Vec<Vec<u8>>> {
         let mut entries: Vec<Vec<u8>> = Vec::new();
         let mut len_bytes = [0u8; 4];
 
@@ -158,7 +158,7 @@ fn test_commit_read() -> Result<()> {
 
     assert_eq!(l.committed()?, 3);
     assert_eq!(l.uncommitted.lock()?.len(), 1);
-    assert_eq!(l.read()?, vec![vec![0], vec![1], vec![2]]);
+    assert_eq!(l.read_all()?, vec![vec![0], vec![1], vec![2]]);
     Ok(())
 }
 

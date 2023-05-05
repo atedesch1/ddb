@@ -60,7 +60,7 @@ impl Log for LogService {
         &self,
         _request: Request<()>,
     ) -> std::result::Result<Response<LogEntries>, Status> {
-        let entries = self.logger.read()?;
+        let entries = self.logger.read_all()?;
 
         return Ok(Response::new(LogEntries { entries }));
     }
