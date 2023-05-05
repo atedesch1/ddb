@@ -3,6 +3,7 @@ use std::sync::Arc;
 use super::logger::Logger;
 use crate::error::Result;
 
+use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
@@ -65,12 +66,23 @@ impl Log for LogService {
         return Ok(Response::new(LogEntries { entries }));
     }
 
-    type StreamLogsStream = ReceiverStream<std::result::Result<LogEntries, Status>>;
+    type StreamLogsStream = ReceiverStream<std::result::Result<LogEntry, Status>>;
 
     async fn stream_logs(
         &self,
         _request: Request<()>,
     ) -> std::result::Result<Response<Self::StreamLogsStream>, Status> {
-        todo!()
+        let (tx, rx) = mpsc::channel(5);
+
+        let logger = self.logger.clone();
+        tokio::spawn(async move {
+            let mut idx = 0;
+            while let Ok(entry) = logger.get(idx) {
+                tx.send(Ok(LogEntry { entry })).await.unwrap();
+                idx += 1;
+            }
+        });
+
+        return Ok(Response::new(ReceiverStream::new(rx)));
     }
 }
