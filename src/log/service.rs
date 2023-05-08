@@ -38,6 +38,8 @@ impl LogService {
 
                 logger.commit(to_commit).unwrap();
             }
+
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         }
     }
 }
