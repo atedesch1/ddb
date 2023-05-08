@@ -6,4 +6,17 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "log"
+path = "./src/log/server/main.rs"
+
 [dependencies]
+tempdir = "0.3"
+tonic = "0.9.2"
+prost = "0.11.9"
+tokio = { version = "1.28.0", features = ["macros", "rt-multi-thread", "sync", "time"] }
+tokio-stream = "*"
+futures-core = "*"
+
+[build-dependencies]
+tonic-build = "0.9.2"
