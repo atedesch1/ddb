@@ -108,19 +108,24 @@ impl Logger {
 
     pub fn get(&self, idx: usize) -> Result<Vec<u8>> {
         let index = self.index.read()?;
-        if idx >= (*index).len() {
-            return Err(Error::Internal("Index out of bounds".into()));
+        let index_len = (*index).len();
+        let uncommitted = self.uncommitted.lock()?;
+        let mut entry: Vec<u8>;
+
+        if idx < index_len {
+            drop(uncommitted);
+            let file = self.file.read()?;
+            let mut bufreader = BufReader::new(&*file);
+            let index_entry: &IndexEntry = (*index).get(idx).unwrap();
+            bufreader.seek(std::io::SeekFrom::Start(index_entry.position))?;
+            entry = vec![0u8; index_entry.length as usize];
+            bufreader.read_exact(&mut entry)?;
+            return Ok(entry);
+        } else if idx < index_len + uncommitted.len() {
+            return Ok(uncommitted.get(idx - index_len).unwrap().clone());
         }
 
-        let file = self.file.read()?;
-        let mut bufreader = BufReader::new(&*file);
-
-        let index_entry: &IndexEntry = (*index).get(idx).unwrap();
-        bufreader.seek(std::io::SeekFrom::Start(index_entry.position))?;
-        let mut entry = vec![0u8; index_entry.length as usize];
-        bufreader.read_exact(&mut entry)?;
-
-        return Ok(entry);
+        return Err(Error::Internal("Index out of bounds".into()));
     }
 
     pub fn read_exact(&self, from_index: usize, num_of_entries: usize) -> Result<Vec<Vec<u8>>> {
@@ -170,11 +175,13 @@ fn test_commit_get() -> Result<()> {
     l.append(vec![0x00])?;
     l.append(vec![0x01])?;
     l.append(vec![0x02])?;
+    l.append(vec![0x03])?;
     l.commit(3)?;
 
-    let entry = l.get(1)?;
-
-    assert_eq!(entry, vec![0x01]);
+    assert_eq!(l.get(0)?, vec![0x00]);
+    assert_eq!(l.get(1)?, vec![0x01]);
+    assert_eq!(l.get(2)?, vec![0x02]);
+    assert_eq!(l.get(3)?, vec![0x03]);
     Ok(())
 }
 
