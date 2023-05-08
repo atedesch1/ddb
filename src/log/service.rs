@@ -18,9 +18,8 @@ pub struct LogService {
 }
 
 impl LogService {
-    pub fn new() -> Result<Self> {
-        let dir = std::path::Path::new("store/logs");
-        let logger = Arc::new(Logger::new(&dir)?);
+    pub fn new(dir: &Path) -> Result<Self> {
+        let logger = Arc::new(Logger::new(dir)?);
 
         let log_committer = logger.clone();
         tokio::spawn(Self::commit_task(log_committer));
