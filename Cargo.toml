@@ -7,6 +7,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
+name = "cache"
+path = "./src/cache/server/main.rs"
+
+[[bin]]
 name = "log"
 path = "./src/log/server/main.rs"
 
