@@ -1,7 +1,7 @@
 use tonic::transport::Channel;
 
 use crate::{
-    error::Result,
+    error::{Error, Result},
     log::rpc::{log_client::LogClient, LogEntry},
 };
 use std::collections::HashMap;
@@ -15,9 +15,26 @@ pub struct KVStore {
 
 impl KVStore {
     pub async fn new() -> Result<Self> {
-        let mut log_client = LogClient::connect("http://[::1]:50001").await?;
+        let mut log_client = Self::try_connect_db().await?;
         let store = Self::init_from_db(&mut log_client).await?;
         return Ok(KVStore { store, log_client });
+    }
+
+    async fn try_connect_db() -> Result<LogClient<Channel>> {
+        for attempt in 1..=5 {
+            match LogClient::connect("http://[::1]:50001").await {
+                Ok(client) => {
+                    return Ok(client);
+                }
+                Err(_) => {
+                    println!("Log client: connection to log storage attempt {} failed. Retrying in 5 seconds...", attempt);
+                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                }
+            }
+        }
+        return Err(Error::Internal(
+            "Log client: connection to log store failed".into(),
+        ));
     }
 
     async fn init_from_db(client: &mut LogClient<Channel>) -> Result<HashMap<Vec<u8>, Vec<u8>>> {
