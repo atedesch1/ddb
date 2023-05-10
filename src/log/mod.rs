@@ -1,5 +1,5 @@
 mod logger;
-mod rpc {
+pub mod rpc {
     tonic::include_proto!("log");
 }
 pub mod service;

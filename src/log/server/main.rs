@@ -1,13 +1,13 @@
 use ddb::{
     error::Result,
-    log::service::{LogServer, LogService},
+    log::{rpc::log_server::LogServer, service::LogService},
 };
 use tonic::transport::Server;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let dir = std::path::Path::new("store/logs");
-    let addr = "[::1]:50051".parse()?;
+    let addr = "[::1]:50001".parse()?;
     let service = LogService::new(&dir)?;
 
     Server::builder()
