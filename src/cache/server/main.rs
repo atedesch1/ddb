@@ -1,8 +1,18 @@
 use ddb::{cache::kv::KVStore, error::Result};
-use std::io::{self, Write};
+use std::{
+    env,
+    io::{self, Write},
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let args: Vec<String> = env::args().collect();
+    let is_master = args
+        .iter()
+        .find(|&arg| (*arg).to_uppercase() == "MASTER")
+        .map(|_| true)
+        .unwrap_or(false);
+
     let mut store = KVStore::new().await?;
 
     loop {
@@ -16,7 +26,7 @@ async fn main() -> Result<()> {
         let operation = words[0].to_uppercase();
 
         match &operation[..] {
-            "INSERT" => {
+            "INSERT" if is_master => {
                 let key = words[1].to_string();
                 let value = words[2].to_string();
                 let result = store.set(key.as_bytes(), value.as_bytes()).await?;
@@ -29,7 +39,7 @@ async fn main() -> Result<()> {
                     None => println!("Inserting new pair ({}, {})", key, value),
                 };
             }
-            "DELETE" => {
+            "DELETE" if is_master => {
                 let key = words[1].to_string();
                 let result = store.delete(key.as_bytes()).await?;
                 match result {
