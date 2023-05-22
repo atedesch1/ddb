@@ -1,4 +1,4 @@
-use ddb::{cache::kv::KVStore, error::Result};
+use ddb::{cache::kv::Store, error::Result};
 use std::{
     env,
     io::{self, Write},
@@ -13,7 +13,7 @@ async fn main() -> Result<()> {
         .map(|_| true)
         .unwrap_or(false);
 
-    let mut store = KVStore::new().await?;
+    let mut store = Store::new().await?;
 
     loop {
         print!("> ");

@@ -1,0 +1,25 @@
+syntax = "proto3";
+package cache;
+import "google/protobuf/empty.proto";
+
+service Cache {
+  rpc StreamOperations(google.protobuf.Empty) returns (stream Operation);
+  rpc CompareState(CacheState) returns (CacheComparison);
+  //rpc MakeMaster(google.protobuf.Empty) returns (google.protobuf.Empty);
+}
+
+enum OperationType {
+  Get = 0;
+  Delete = 1;
+  Set = 2;
+}
+
+message Operation {
+  OperationType ty = 1;
+  bytes key = 2;
+  optional bytes value = 3;
+}
+
+message CacheComparison { bool isEqual = 1; }
+
+message CacheState { bytes hash = 1; }
